@@ -1,0 +1,127 @@
+apply plugin: 'com.android.application'
+apply plugin: 'android-aspectjx'
+
+def releaseTime() {
+    return new Date().format("yyyy-MM-dd HH-mm-ss", TimeZone.getTimeZone("GMT+08"))
+}
+
+android {
+    signingConfigs {
+        release {
+            storeFile file('keystore/app.jks')
+            keyAlias 'key0'
+            keyPassword '123456'
+            storePassword '123456'
+            //v1和v2的签名使用
+//            只勾选v1签名并不会影响什么，但是在7.0上不会使用更安全的验证方式
+//            只勾选V2签名7.0以下会直接安装完显示未安装，7.0以上则使用了V2的方式验证
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+    compileSdkVersion rootProject.ext.android.compileSdkVersion
+    defaultConfig {
+        applicationId rootProject.ext.android.applicationId
+        minSdkVersion rootProject.ext.android.minSdkVersion
+        targetSdkVersion rootProject.ext.android.targetSdkVersion
+        versionCode rootProject.ext.android.versionCode
+        versionName rootProject.ext.android.versionName
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        flavorDimensions "default"
+        ndk {
+            // 设置支持的SO库架构
+            abiFilters 'armeabi', 'x86_64'//, 'x86 ','armeabi-v7a', 'arm64-v8a'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+            debuggable true
+        }
+    }
+
+    productFlavors {
+        "normal" {
+            manifestPlaceholders = [C_CHANNEL: "360", G_CHANNEL: "360应用市场"]
+        }
+    }
+
+    android {
+        applicationVariants.all { variant ->
+            //luoboyoujie_360_v1.1.0 正式包需要打包名字的格式
+            if (variant.buildType.name == 'release') {
+                variant.getPackageApplication().outputDirectory = new File(project.rootDir.absolutePath + "/app/build/outputs/release")
+                variant.getPackageApplication().outputScope.apkDatas.forEach { apkData ->
+                    apkData.outputFileName = '本地购物_' + variant.buildType.name + "_" + variant.versionName + '_' + releaseTime() + '_' + variant.flavorName + '.apk'
+                }
+            } else {
+                variant.outputs.all { output ->
+                    def buildName = "本地购物_"
+                    def type = variant.buildType.name
+                    def releaseApkName = buildName + '_' + type + "_" + variant.versionName + '_' + releaseTime() + '_' + variant.flavorName + '.apk'
+                    outputFileName = releaseApkName
+                }
+            }
+        }
+    }
+}
+
+aspectjx {
+//    include 'butterknife'//织入遍历butterknife
+//    exclude '.jar'//忽略所有依赖的库
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation rootProject.ext.dependencies["recyclerview-v7"]
+    implementation rootProject.ext.dependencies["support-appcompat-v7"]
+    //美化代码
+    implementation rootProject.ext.dependencies["rxjava"]
+    implementation rootProject.ext.dependencies["rxandroid"]
+    //网络请求
+    implementation rootProject.ext.dependencies["okhttp"]
+    implementation rootProject.ext.dependencies["logging-interceptor"]
+    //网络层提取封装
+    implementation rootProject.ext.dependencies["retrofit"]
+    implementation rootProject.ext.dependencies["converter-gson"]
+    implementation rootProject.ext.dependencies["converter-scalars"]
+    implementation rootProject.ext.dependencies["adapter-rxjava2"]
+    // rxlifecycle2
+    compile rootProject.ext.dependencies["rxlifecycle"]
+    compile rootProject.ext.dependencies["rxlifecycle-android"]
+    compile(rootProject.ext.dependencies["rxlifecycle-components"]) {
+        exclude group: 'android.support'
+    }
+    //图片加载
+    implementation rootProject.ext.dependencies["glide"]
+    implementation rootProject.ext.dependencies["okhttp3-integration"]
+    annotationProcessor rootProject.ext.dependencies["glide-compiler"]
+    //申请权限
+    implementation rootProject.ext.dependencies["rxpermissions"]
+    //adapter适配器
+    implementation rootProject.ext.dependencies["BaseRecyclerViewAdapterHelper"]
+    //布局绑定
+    implementation rootProject.ext.dependencies["butterknife"]
+    annotationProcessor rootProject.ext.dependencies["butterknife-compiler"]
+    implementation rootProject.ext.dependencies["Android-SpinKit"]
+    //切面条
+    implementation rootProject.ext.dependencies["aspectj"]
+    //崩溃日志记录
+    implementation rootProject.ext.dependencies["crashreport"]
+    implementation rootProject.ext.dependencies["nativecrashreport"]
+    //屏幕适配
+    implementation rootProject.ext.dependencies["autosize"]
+    //切换不同的数据状态布局
+    implementation rootProject.ext.dependencies["StatusLayoutManager"]
+    //上下拉刷新组件
+    implementation project(':refresh:refresh-header')
+    implementation project(':refresh:refresh-layout')
+    //状态栏
+    implementation project(":statusbar")
+}

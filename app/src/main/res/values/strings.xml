@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">本地购物</string>
+    <string name="jump_txt">跳过  %ds</string>
+</resources>
